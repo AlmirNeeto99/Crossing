@@ -1,7 +1,7 @@
-package Util;
+package Util.Interfaces;
 
-import Model.Path;
-import Model.Status;
+import Model.Enums.Path;
+import Model.Enums.Status;
 
 public abstract class Car {
 
@@ -11,7 +11,7 @@ public abstract class Car {
     public Path from;
     public Path to;
 
-    public Status status;
+    public Status status = Status.STOPPED;
 
     /* Move the car */
     public abstract void move();
@@ -21,30 +21,34 @@ public abstract class Car {
     public abstract void turn_right();
 
     public void accelerate() {
-        this.speed += 1.0;
+        this.speed += 0.25;
     }
 
     public void decelerate() {
-        this.speed -= 1.0;
+        this.speed -= 0.25;
     }
 
-    public Path get_from() {
+    public Path getFrom() {
         return this.from;
     }
 
-    public Path get_to() {
+    public Path getTo() {
         return this.to;
     }
 
-    public void set_from(Path from) {
+    public void setFrom(Path from) {
         this.from = from;
     }
 
-    public void set_to(Path to) {
+    public void setTo(Path to) {
         this.to = to;
     }
 
-    public Status get_status() {
+    public Status getStatus() {
         return this.status;
+    }
+    
+    public void setStatus(Status status){
+        this.status = status;
     }
 }
