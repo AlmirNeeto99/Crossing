@@ -1,4 +1,4 @@
-package Model;
+package Model.Peer;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -35,8 +35,8 @@ public class PeerHandler implements Runnable {
             }
         }
     }
-    
-    public String getLastData(){
+
+    public String getLastData() {
         return this.data_queue.remove(0);
     }
 }
