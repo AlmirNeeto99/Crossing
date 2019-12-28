@@ -35,7 +35,7 @@ public final class RoadBuilder {
 
     public void draw_lines(Graphics2D g, int starting_x, int starting_y, int width, int height, int direction) {
         g.setColor(Color.gray);
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             if (direction == 0) {
                 g.fillRect(starting_x - (40 * (i)), starting_y, width, height);
             } else {

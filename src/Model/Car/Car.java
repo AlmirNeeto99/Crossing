@@ -1,24 +1,20 @@
-package Util.Interfaces;
+package Model.Car;
 
 import Model.Enums.Path;
 import Model.Enums.Status;
+import java.awt.Rectangle;
 
-public abstract class Car {
+public class Car extends Rectangle {
 
-    public int x; // car's X position
-    public int y; // car's Y position
     private double speed = 1.0;
     public Path from;
     public Path to;
 
     public Status status = Status.STOPPED;
 
-    /* Move the car */
-    public abstract void move();
-
-    public abstract void turn_left();
-
-    public abstract void turn_right();
+    public Car(int x, int y) {
+        super(x, y, 20, 20);
+    }
 
     public void accelerate() {
         this.speed += 0.25;
@@ -47,8 +43,8 @@ public abstract class Car {
     public Status getStatus() {
         return this.status;
     }
-    
-    public void setStatus(Status status){
+
+    public void setStatus(Status status) {
         this.status = status;
     }
 }
