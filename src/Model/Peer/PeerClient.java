@@ -1,6 +1,5 @@
 package Model.Peer;
 
-import View.main;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -26,7 +25,7 @@ public class PeerClient {
             out.writeObject(message);
             out.flush();
         } catch (IOException ex) {
-            Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(PeerClient.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

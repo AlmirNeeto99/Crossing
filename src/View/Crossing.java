@@ -13,6 +13,6 @@ public class Crossing extends JPanel{
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         
-        main2.m.repaint(g);
+        Main.m.repaint(g);
     }        
 }

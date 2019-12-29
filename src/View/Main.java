@@ -2,43 +2,47 @@ package View;
 
 import Model.Car.Car;
 import Model.Car.Start_Positions;
-import Model.Limits.End_Limits;
-import Model.Limits.Start_Limits;
-import Model.Limits.Stop_Limits;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.Timer;
 
 /**
  *
  * @author Almir
  */
-public class main2 implements ActionListener {
+public class Main extends JFrame implements ActionListener {
 
-    public Crossing crossing;
-    public Car car_1, car_2, car_3, car_4;
+    private Crossing crossing;
+    private Car car_1, car_2, car_3, car_4;
 
-    public static main2 m;
+    public static Main m;
 
-    public final int HEIGHT = 600, WIDTH = 600;
-    public final int street_length = 80;
+    private JPanel cards;
 
-    public main2() {
+    private final int HEIGHT = 600, WIDTH = 600;
+    private final int street_length = 80;
+
+    public Main() {
         crossing = new Crossing();
-        JFrame frame = new JFrame();
+        cards = new JPanel(new CardLayout());
         Timer timer = new Timer(20, this);
 
-        frame.add(crossing);
-        frame.setSize(HEIGHT, WIDTH);
-        frame.setTitle("Crossing");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
-        frame.setVisible(true);
+        cards.add(new HomePage(), "Home");
+        cards.add(crossing, "Cross");
+
+        add(cards);
+
+        setSize(HEIGHT, WIDTH);
+        setTitle("Crossing");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setResizable(false);
+        setVisible(true);
 
         int[] pos = new Start_Positions().get_right();
         car_1 = new Car(pos[0], pos[1]); //Right
@@ -53,7 +57,7 @@ public class main2 implements ActionListener {
     }
 
     public static void main(String[] args) {
-        m = new main2();
+        m = new Main();
     }
 
     public void repaint(Graphics g) {
@@ -89,6 +93,11 @@ public class main2 implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         crossing.repaint();
+    }
+
+    public void change(String card) {
+        CardLayout cardLayout = (CardLayout) cards.getLayout();
+        cardLayout.show(cards, card);
     }
 
 }
