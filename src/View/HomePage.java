@@ -5,6 +5,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -17,14 +18,14 @@ public class HomePage extends JPanel {
 
         GridBagLayout grid = new GridBagLayout();
         GridBagConstraints c = new GridBagConstraints();
-        this.setLayout(grid);
+        setLayout(grid);
 
         JLabel lab = new JLabel("<html><font color='#4287f5' size='10'>Crossing</font></html>");
         lab.setFont(Font.getFont("Comic Sans MS"));
         c.fill = GridBagConstraints.HORIZONTAL;
         c.gridx = 0;
         c.gridy = 0;
-        this.add(lab, c);
+        add(lab, c);
 
         c.fill = GridBagConstraints.HORIZONTAL;
         c.insets = new Insets(50, 0, 0, 0);  //top padding
@@ -38,15 +39,19 @@ public class HomePage extends JPanel {
                 try {
                     int port = Integer.parseInt(val);
                     Main.m.change("Cross");
+                    JOptionPane.showMessageDialog(this.getParent(), "Press \"Crtl+h\" at any time to connect to a new peer.", "Info", JOptionPane.INFORMATION_MESSAGE);
+                    try {
+                        Main.controller.create_server(port);
+                    } catch (IOException e) {
+                        System.out.println(e);
+                    }
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(this.getParent(), "Please, type a number!", "Erro", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this.getParent(), "Please, type a number!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
 
             }
-
             // call main function to start server
         });
-
-        this.add(start, c);
+        add(start, c);
     }
 }

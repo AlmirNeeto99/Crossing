@@ -1,6 +1,6 @@
 package Model.Car;
 
-public class End_Positions extends Crucial_Positions {
+public class EndPositions extends CrucialPositions {
 
     private final int offset = 80;
 

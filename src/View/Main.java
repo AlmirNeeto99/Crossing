@@ -1,13 +1,17 @@
 package View;
 
-import Model.Car.Car;
-import Model.Car.Start_Positions;
+import Controller.Controller;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -18,22 +22,26 @@ import javax.swing.Timer;
  */
 public class Main extends JFrame implements ActionListener {
 
-    private Crossing crossing;
-    private Car car_1, car_2, car_3, car_4;
+    public static Controller controller;
+
+    private static Crossing crossing;
+    private static HomePage home;
 
     public static Main m;
 
     private JPanel cards;
 
     private final int HEIGHT = 600, WIDTH = 600;
-    private final int street_length = 80;
+    //private final int street_length = 80;
 
     public Main() {
+        controller = new Controller();
         crossing = new Crossing();
+        home = new HomePage();
         cards = new JPanel(new CardLayout());
         Timer timer = new Timer(20, this);
 
-        cards.add(new HomePage(), "Home");
+        cards.add(home, "Home");
         cards.add(crossing, "Cross");
 
         add(cards);
@@ -44,35 +52,59 @@ public class Main extends JFrame implements ActionListener {
         setResizable(false);
         setVisible(true);
 
-        int[] pos = new Start_Positions().get_right();
-        car_1 = new Car(pos[0], pos[1]); //Right
-        pos = new Start_Positions().get_left();
-        car_2 = new Car(pos[0], pos[1]); // Left
-        pos = new Start_Positions().get_up();
-        car_3 = new Car(pos[0], pos[1]); // Up
-        pos = new Start_Positions().get_down();
-        car_4 = new Car(pos[0], pos[1]); // Down
-
         timer.start();
+
+        KeyListener key = new KeyListener() {
+            private Set<Integer> keys = new HashSet();
+
+            @Override
+            public void keyTyped(KeyEvent ke) {
+                //System.out.println(ke);
+            }
+
+            @Override
+            public void keyPressed(KeyEvent ke) {
+                if (ke.getKeyCode() == 17) {
+                    keys.add(ke.getKeyCode());
+                }
+                if (keys.size() > 0) {
+                    if (ke.getKeyCode() == 72) {
+                        crossing.connect();
+                    }
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent ke) {
+                keys.remove(ke.getKeyCode());
+            }
+        };
+        addKeyListener(key);
+
     }
 
     public static void main(String[] args) {
         m = new Main();
+        Thread check_for_new_connection = new Thread() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        if (controller.has_new_peer()) {
+                            crossing.has_new_peer();
+                        }
+                        Thread.sleep(250);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        };
+        check_for_new_connection.start();
     }
 
     public void repaint(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
-
-        // Cars start
-        g2d.setColor(Color.MAGENTA);
-        g2d.fillRect(car_1.x, car_1.y, car_1.width, car_1.height);
-        g2d.setColor(Color.CYAN);
-        g2d.fillRect(car_2.x, car_2.y, car_2.width, car_2.height);
-        g2d.setColor(Color.PINK);
-        g2d.fillRect(car_3.x, car_3.y, car_3.width, car_3.height);
-        g2d.setColor(Color.ORANGE);
-        g2d.fillRect(car_4.x, car_4.y, car_4.width, car_4.height);
-        // Cars start
 
         //Road start
         new RoadBuilder().draw_road(g2d, 210, 381, 10, 150, 0);
@@ -87,7 +119,8 @@ public class Main extends JFrame implements ActionListener {
         new RoadBuilder().draw_lines(g2d, WIDTH / 2 - 5, 200, 10, 20, 1);
         new RoadBuilder().draw_lines(g2d, WIDTH / 2 - 5, 540, 10, 20, 1);
         // Lines end
-
+        
+        controller.refresh_cars(g2d);
     }
 
     @Override
@@ -99,5 +132,4 @@ public class Main extends JFrame implements ActionListener {
         CardLayout cardLayout = (CardLayout) cards.getLayout();
         cardLayout.show(cards, card);
     }
-
 }

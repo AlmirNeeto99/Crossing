@@ -6,16 +6,12 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author Almir
- */
 public class PeerClient {
 
     private Socket client;
 
-    public PeerClient(int port) throws IOException {
-        this.client = new Socket("localhost", port);
+    public PeerClient(String host,int port) throws IOException {
+        this.client = new Socket(host, port);
     }
 
     public void send(String message) {

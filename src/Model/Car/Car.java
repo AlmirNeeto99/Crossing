@@ -2,18 +2,31 @@ package Model.Car;
 
 import Model.Enums.Path;
 import Model.Enums.Status;
+import java.awt.Color;
 import java.awt.Rectangle;
 
 public class Car extends Rectangle {
 
     private double speed = 1.0;
-    public Path from;
-    public Path to;
+    private Path from;
+    private Path to;
+    private final Plate plate;
+    private Color color;
 
     public Status status = Status.STOPPED;
 
-    public Car(int x, int y) {
+    public Car(int x, int y, Plate plate, Color color) {
         super(x, y, 20, 20);
+        this.plate = plate;
+        this.color = color;
+    }
+
+    public Car(int x, int y, Path from, Path to, Plate plate, Color color) {
+        super(x, y, 20, 20);
+        this.from = from;
+        this.to = to;
+        this.plate = plate;
+        this.color = color;
     }
 
     public void accelerate() {
@@ -46,5 +59,9 @@ public class Car extends Rectangle {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+    
+    public Color getColor(){
+        return this.color;
     }
 }

@@ -1,6 +1,6 @@
 package Model.Car;
 
-public class Start_Positions extends Crucial_Positions {
+public class StartPositions extends CrucialPositions {
 
     public int[] get_up() {
         return new int[]{this.up[0], this.up[1]};

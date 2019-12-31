@@ -1,6 +1,6 @@
 package Model.Car;
 
-public abstract class Crucial_Positions {
+public abstract class CrucialPositions {
 
     public final int[] up = {250, 50};
     public final int[] down = {330, 530};
