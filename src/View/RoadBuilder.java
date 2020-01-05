@@ -6,14 +6,10 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 
-/**
- *
- * @author Almir
- */
-public final class RoadBuilder {
+public abstract class RoadBuilder {
 
     /* Draw a square L and  then rotate it... */
-    public void draw_road(Graphics2D g, int x, int y, int width, int height, int rotate) {
+    public static void draw_road(Graphics2D g, int x, int y, int width, int height, int rotate) {
         Rectangle first = new Rectangle(x, y, width, height);
         Rectangle second = new Rectangle(x, y, width, height - 10);
 
@@ -33,7 +29,7 @@ public final class RoadBuilder {
         g.fill(s_second);
     }
 
-    public void draw_lines(Graphics2D g, int starting_x, int starting_y, int width, int height, int direction) {
+    public static void draw_lines(Graphics2D g, int starting_x, int starting_y, int width, int height, int direction) {
         g.setColor(Color.gray);
         for (int i = 0; i < 5; i++) {
             if (direction == 0) {

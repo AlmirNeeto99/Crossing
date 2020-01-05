@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 /**
  * PeerServer is an object that hold all clients that are connected to it.
@@ -12,37 +13,33 @@ import java.net.Socket;
  */
 public class PeerServer extends ServerSocket {
 
-    private PeerHandler[] peers;
-    private int size = 0; //Actual amount of peers connected to this 'host'
+    private ArrayList<PeerHandler> peers;
 
     private boolean new_peer = false;
 
     public PeerServer(int port) throws IOException {
         super(port, 3, InetAddress.getLocalHost());
-        this.peers = new PeerHandler[3];
+        this.peers = new ArrayList();
     }
 
     public PeerServer(int size, int port) throws IOException {
         super(port, size, InetAddress.getLocalHost());
-        this.peers = new PeerHandler[size];
+        this.peers = new ArrayList(size);
     }
 
-    public PeerHandler add_peer(Socket s) {
+    public PeerHandler add_peer(Socket s) throws IOException {
         new_peer = true;
         PeerHandler hand = new PeerHandler(s);
-        peers[size++] = hand;
+        this.peers.add(hand);
         return hand;
     }
 
     public void kill_peers() {
-        for (int i = 0; i < peers.length; i++) {
-            peers[i] = null;
-        }
-        this.size = 0;
+        this.peers.clear();
         System.gc();
     }
 
-    public PeerHandler[] getPeers() {
+    public ArrayList<PeerHandler> getPeers() {
         return this.peers;
     }
 
@@ -56,5 +53,20 @@ public class PeerServer extends ServerSocket {
 
     public String get_address() {
         return this.getInetAddress().getHostAddress();
+    }
+
+    public int get_peer_index(String address) {
+        int idx = 0;
+        for (PeerHandler p : peers) {
+            if (address.equals(p.get_host() + ":" + p.get_port())) {
+                return idx;
+            }
+            idx++;
+        }
+        return -1;
+    }
+
+    public void remove(int idx) {
+        this.peers.remove(idx);
     }
 }

@@ -1,5 +1,7 @@
 package View;
 
+import View.GUI.Crossing;
+import View.GUI.HomePage;
 import Controller.Controller;
 import java.awt.CardLayout;
 import java.awt.Graphics;
@@ -107,19 +109,27 @@ public class Main extends JFrame implements ActionListener {
         Graphics2D g2d = (Graphics2D) g;
 
         //Road start
-        new RoadBuilder().draw_road(g2d, 210, 381, 10, 150, 0);
-        new RoadBuilder().draw_road(g2d, 220, 210, 10, 150, 90);
-        new RoadBuilder().draw_road(g2d, 391, 220, 10, 150, 180);
-        new RoadBuilder().draw_road(g2d, 381, 391, 10, 150, 270);
+        RoadBuilder.draw_road(g2d, 210, 381, 10, 150, 0);
+        RoadBuilder.draw_road(g2d, 220, 210, 10, 150, 90);
+        RoadBuilder.draw_road(g2d, 391, 220, 10, 150, 180);
+        RoadBuilder.draw_road(g2d, 381, 391, 10, 150, 270);
         //Road end
 
         // Lines start
-        new RoadBuilder().draw_lines(g2d, 200, HEIGHT / 2 - 5, 20, 10, 0);
-        new RoadBuilder().draw_lines(g2d, 540, HEIGHT / 2 - 5, 20, 10, 0);
-        new RoadBuilder().draw_lines(g2d, WIDTH / 2 - 5, 200, 10, 20, 1);
-        new RoadBuilder().draw_lines(g2d, WIDTH / 2 - 5, 540, 10, 20, 1);
+        RoadBuilder.draw_lines(g2d, 200, HEIGHT / 2 - 5, 20, 10, 0);
+        RoadBuilder.draw_lines(g2d, 540, HEIGHT / 2 - 5, 20, 10, 0);
+        RoadBuilder.draw_lines(g2d, WIDTH / 2 - 5, 200, 10, 20, 1);
+        RoadBuilder.draw_lines(g2d, WIDTH / 2 - 5, 540, 10, 20, 1);
         // Lines end
-        
+
+//        g2d.setColor(Color.yellow);
+//        g2d.drawRect(250, 250, 20, 20); //second quad 
+//        g2d.setColor(Color.red);
+//        g2d.drawRect(330, 330, 20, 20); //forth quad
+//        g2d.setColor(Color.black); 
+//        g2d.drawRect(250, 330, 20, 20);//third quad
+//        g2d.setColor(Color.blue);
+//        g2d.drawRect(330, 250, 20, 20); //first quad
         controller.refresh_cars(g2d);
     }
 

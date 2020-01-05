@@ -1,12 +1,12 @@
 package Controller;
 
-import Model.Car.Car;
-import Model.Car.Plate;
-import Model.Car.StartPositions;
-import Model.Enums.Path;
-import Model.Peer.PeerClient;
-import Model.Peer.PeerHandler;
-import Model.Peer.PeerServer;
+import Model.Car.Enums.Path;
+import Model.Car.Enums.Status;
+import Model.Car.Util.HandleCarMovements;
+import Model.Car.Positions.CrossingPositions;
+import Model.Car.*;
+import Model.Peer.*;
+import Util.CrossingHandler;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.io.IOException;
@@ -23,19 +23,78 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-public class Controller {
+public class Controller implements CrossingPositions {
 
     private PeerServer server;
     private final HashMap<String, Car> cars = new HashMap();
     private final HashMap<String, PeerClient> peers = new HashMap();
+    private final CrossingHandler crossing = new CrossingHandler();
+
+    private String server_address = "";
 
     public void create_server(int port) throws IOException {
         server = new PeerServer(port);
         start_server();
         /*Create an instance for local car*/
-        Path[] path = get_path();
-        int[] start = get_start_position(path[0]);
-        cars.put(server.get_address() + ":" + port, new Car(start[0], start[1], path[0], path[1], new Plate(server.get_address(), port), create_color()));
+        Path[] path = HandleCarMovements.get_path();
+        int[] start = HandleCarMovements.get_start_position(path[0]);
+        Car c = new Car(start[0], start[1], path[0], path[1], new Plate(server.get_address(), port), create_color());
+        HandleCarMovements.set_car_direction(c, path[0]);
+        c.setStatus(Status.MOVING);
+        cars.put(server.get_address() + ":" + port, c);
+        this.server_address = server.get_address() + ":" + port;
+        System.out.println("Creating server cars:" + cars.entrySet());
+
+        Thread t = new Thread() {
+            public void run() {
+                while (true) {
+                    try {
+                        send_local_car_position();
+                    } catch (IOException ex) {
+                        Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        };
+        t.start();
+
+        Thread move_car = new Thread() {
+            public void run() {
+                Car car = cars.get(server.get_address() + ":" + server.getLocalPort());
+
+                while (true) {
+                    switch (car.getFrom()) {
+                        case UP:
+                            HandleCarMovements.car_from_up(car);
+                            break;
+                        case DOWN:
+                            HandleCarMovements.car_from_down(car);
+                            break;
+                        case LEFT:
+                            HandleCarMovements.car_from_left(car);
+                            break;
+                        case RIGHT:
+                            HandleCarMovements.car_from_right(car);
+                            break;
+                    }
+                    if (car.getStatus() != Status.STOPPED) {
+                        car.move();
+                    }
+                    HandleCarMovements.check_if_reached_end(car);
+                    try {
+                        Thread.sleep(150);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        };
+        move_car.start();
     }
 
     private void start_server() {
@@ -63,66 +122,70 @@ public class Controller {
         listen.start();
     }
 
-    public void connect_peer(String host, int port) throws IOException {
+    synchronized public Car connect_peer(String host, int port) throws IOException {
         PeerClient peer = new PeerClient(host, port);
+        send_connection_information(peer);
+        send_known_peers(peer);
+        Car c = new Car(0, 0, new Plate(host, port), create_color());
+        cars.put(host + ":" + port, c);
         peers.put(host + ":" + port, peer);
-        System.out.println(peers.size());
-        send_connect_information();
-        send_local_car_position();
-        send_known_peers();
+
+        return c;
     }
 
-    private void peer_handshake(String host, int port) {
-        PeerClient peer = null;
-        try {
-            peer = new PeerClient(host, port);
-            peers.put(host + ":" + port, peer);
-            System.out.println(peers.size());
-            send_local_car_position();
-            send_known_peers();
-        } catch (Exception e) {
-            System.out.println(e);
-        }
+    private void send_connection_information(PeerClient p) throws IOException {
+        JSONObject jo = new JSONObject();
+        // Sending local ip and port to remote peer
+        jo.put("data_type", "connection_data");
+        jo.put("host", server.get_address());
+        jo.put("port", server.getLocalPort());
+        jo.put("car_x", ((Car) cars.get(((server.get_address() + ":" + server.getLocalPort())))).x);
+        jo.put("car_y", ((Car) cars.get(((server.get_address() + ":" + server.getLocalPort())))).y);
+        jo.put("from", "" + ((Car) cars.get(((server.get_address() + ":" + server.getLocalPort())))).getFrom());
+        jo.put("to", "" + ((Car) cars.get(((server.get_address() + ":" + server.getLocalPort())))).getTo());
 
+        p.send(jo.toJSONString());
+
+        jo.clear();
     }
 
-    private void notifyAllPeers(String msg) {
+    private void notifyAllPeers(String msg) throws IOException {
         for (Map.Entry<String, PeerClient> entry : peers.entrySet()) {
             PeerClient p = entry.getValue();
             p.send(msg);
         }
     }
 
-    private void send_connect_information() {
-        JSONObject jo = new JSONObject();
-        jo.put("data_type", "handshake");
-        jo.put("host", server.get_address());
-        jo.put("port", server.getLocalPort());
-        notifyAllPeers(jo.toJSONString());
-    }
-
-    private void send_local_car_position() {
+    private void send_local_car_position() throws IOException {
         JSONObject jo = new JSONObject();
         Car c = cars.get(server.get_address() + ":" + server.getLocalPort());
         jo.put("data_type", "car_position");
         jo.put("car_x", c.x);
         jo.put("car_y", c.y);
+
         notifyAllPeers(jo.toJSONString());
     }
 
-    private void send_known_peers() {
+    private void send_known_peers(PeerClient p) throws IOException {
         JSONObject jo = new JSONObject();
         JSONArray ja = new JSONArray();
 
-        Map m = new LinkedHashMap(server.getPeers().length);
+        if (peers.size() > 0) {
+            Map m = new LinkedHashMap();
 
-        for (PeerHandler p : server.getPeers()) {
-            m.put("host", p.get_host());
-            m.put("port", p.get_port());
+            for (Map.Entry<String, PeerClient> entry : peers.entrySet()) {
+                String key = entry.getKey();
+                String split[] = key.split(":");
+                String host = split[0];
+                String port = split[1];
+                m.put("host", host);
+                m.put("port", Integer.parseInt(port));
+            }
+            ja.add(m);
         }
-        ja.add(m);
+        jo.put("data_type", "more_peers");
         jo.put("peers", ja);
-        notifyAllPeers(jo.toJSONString());
+        p.send(jo.toJSONString());
     }
 
     public boolean has_new_peer() {
@@ -140,57 +203,6 @@ public class Controller {
         }
     }
 
-    private Path[] get_path() {
-        Path path[] = new Path[2];
-        Random rand = new Random();
-        int start = rand.nextInt(4);
-        switch (start) {
-            case 0:
-                path[0] = Path.UP;
-                break;
-            case 1:
-                path[0] = Path.RIGHT;
-                break;
-            case 2:
-                path[0] = Path.DOWN;
-                break;
-            case 3:
-                path[0] = Path.LEFT;
-                break;
-        }
-        int stop = rand.nextInt(4);
-        while (start == stop) {
-            stop = rand.nextInt(4);
-        }
-        switch (stop) {
-            case 0:
-                path[1] = Path.UP;
-                break;
-            case 1:
-                path[1] = Path.RIGHT;
-                break;
-            case 2:
-                path[1] = Path.DOWN;
-                break;
-            case 3:
-                path[1] = Path.LEFT;
-                break;
-        }
-        return path;
-    }
-
-    private int[] get_start_position(Path where) {
-        StartPositions start = new StartPositions();
-        if (where == Path.UP) {
-            return start.get_up();
-        } else if (where == Path.DOWN) {
-            return start.get_down();
-        } else if (where == Path.RIGHT) {
-            return start.get_right();
-        }
-        return start.get_left();
-    }
-
     private Color create_color() {
         Random rand = new Random();
         return new Color(rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
@@ -198,37 +210,107 @@ public class Controller {
 
     private void read_peer(PeerHandler hand) {
         while (true) {
-            String data = hand.read();
-            if (data != null) {
-                Object obj = null;
-                try {
-                    obj = new JSONParser().parse(data);
-                    JSONObject jo = (JSONObject) obj;
-                    String type = (String) jo.get("data_type");
-                    System.out.println(jo.toJSONString());
-                    if (type.equals("car_position")) {
-                        String x = jo.get("car_x") + "";
-                        String y = jo.get("car_y") + "";
-                        int x_int = Integer.parseInt(x);
-                        int y_int = Integer.parseInt(y);
-                        cars.put(hand.get_host() + ":" + hand.get_port(), new Car(x_int, y_int, new Plate(hand.get_host(), hand.get_port()), create_color()));
-                    } else if (type.equals("more_peers")) {
-                        JSONArray ja = (JSONArray) jo.get("peers");
-
-                        Iterator itr = ja.iterator();
-
-                        while (itr.hasNext()) {
-                            System.out.println(itr);
+            String data = null;
+            try {
+                data = hand.read();
+                System.out.println(data);
+                if (data != null) {
+                    Object obj = null;
+                    try {
+                        obj = new JSONParser().parse(data);
+                        JSONObject jo = (JSONObject) obj;
+                        String type = (String) jo.get("data_type");
+                        if (type.equals("connection_data")) {
+                            String host = (String) jo.get("host");
+                            int port = Integer.parseInt(jo.get("port") + "");
+                            hand.set_host(host);
+                            hand.set_port(port);
+                            if (!peers.containsKey(host + ":" + port)) {
+                                Car c = connect_peer(host, port);
+                                c.x = Integer.parseInt(jo.get("car_x") + "");
+                                c.y = Integer.parseInt(jo.get("car_y") + "");
+                                String from = jo.get("from") + "";
+                                String to = jo.get("to") + "";
+                                switch (from) {
+                                    case "UP":
+                                        c.setFrom(Path.UP);
+                                        break;
+                                    case "DOWN":
+                                        c.setFrom(Path.DOWN);
+                                        break;
+                                    case "LEFT":
+                                        c.setFrom(Path.LEFT);
+                                        break;
+                                    case "RIGHT":
+                                        c.setFrom(Path.RIGHT);
+                                        break;
+                                }
+                                switch (to) {
+                                    case "UP":
+                                        c.setTo(Path.UP);
+                                        break;
+                                    case "DOWN":
+                                        c.setTo(Path.DOWN);
+                                        break;
+                                    case "LEFT":
+                                        c.setTo(Path.LEFT);
+                                        break;
+                                    case "RIGHT":
+                                        c.setTo(Path.RIGHT);
+                                        break;
+                                }
+                            }
+                        } else if (type.equals("car_position")) {
+                            int x = Integer.parseInt(jo.get("car_x") + "");
+                            int y = Integer.parseInt(jo.get("car_y") + "");
+                            if (hand.get_host() != null) {
+                                Car c = cars.get(hand.get_host() + ":" + hand.get_port());
+                                c.x = x;
+                                c.y = y;
+                                Car car = cars.get(server.get_address() + ":" + server.getLocalPort());
+                                if (car.intersects(c)) {
+                                    switch (car.getFrom()) {
+                                        case UP:
+                                            car.y += 25;
+                                            break;
+                                        case DOWN:
+                                            car.y -= 25;
+                                            break;
+                                        case LEFT:
+                                            car.x += 25;
+                                            break;
+                                        case RIGHT:
+                                            car.x -= 25;
+                                            break;
+                                    }
+                                }
+                            }
+                        } else if (type.equals("more_peers")) {
+                            JSONArray arr = (JSONArray) jo.get("peers");
+                            Iterator it = arr.iterator();
+                            while (it.hasNext()) {
+                                JSONObject ob = (JSONObject) it.next();
+                                String host = (String) ob.get("host");
+                                int port = Integer.parseInt(ob.get("port") + "");
+                                if (!server_address.equals(host + ":" + port) && !peers.containsKey(host + ":" + port)) {
+                                    connect_peer(host, port);
+                                }
+                            }
                         }
-                    } else if (type.equals("handshake")) {
-                        String host = jo.get("host") + "";
-                        String y = jo.get("port") + "";
-                        int port = Integer.parseInt(y);
-                        peer_handshake(host, port);
+                    } catch (ParseException ex) {
+                        Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                } catch (ParseException ex) {
-                    Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                 }
+            } catch (ClassNotFoundException ex) {
+                Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                peers.remove(hand.get_host() + ":" + hand.get_port());
+                cars.remove(hand.get_host() + ":" + hand.get_port());
+                int rmv = server.get_peer_index(hand.get_host() + ":" + hand.get_port());
+                if (rmv != -1) {
+                    server.remove(rmv);
+                }
+                break;
             }
         }
     }

@@ -1,5 +1,6 @@
-package View;
+package View.GUI;
 
+import View.Main;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;

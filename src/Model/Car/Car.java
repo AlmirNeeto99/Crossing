@@ -1,17 +1,19 @@
 package Model.Car;
 
-import Model.Enums.Path;
-import Model.Enums.Status;
+import Model.Car.Enums.Direction;
+import Model.Car.Enums.Path;
+import Model.Car.Enums.Status;
 import java.awt.Color;
 import java.awt.Rectangle;
 
 public class Car extends Rectangle {
 
-    private double speed = 1.0;
+    private double speed = 20;
     private Path from;
     private Path to;
     private final Plate plate;
-    private Color color;
+    private final Color color;
+    private Direction direction = null;
 
     public Status status = Status.STOPPED;
 
@@ -31,6 +33,14 @@ public class Car extends Rectangle {
 
     public void accelerate() {
         this.speed += 0.25;
+    }
+
+    public double get_speed() {
+        return this.speed;
+    }
+
+    public void set_speed(double speed) {
+        this.speed = speed;
     }
 
     public void decelerate() {
@@ -60,8 +70,29 @@ public class Car extends Rectangle {
     public void setStatus(Status status) {
         this.status = status;
     }
-    
-    public Color getColor(){
+
+    public Color getColor() {
         return this.color;
+    }
+
+    public void move() {
+        switch (this.direction) {
+            case UP:
+                this.y -= this.speed;
+                break;
+            case DOWN:
+                this.y += this.speed;
+                break;
+            case RIGHT:
+                this.x += this.speed;
+                break;
+            case LEFT:
+                this.x -= this.speed;
+                break;
+        }
+    }
+
+    public void set_direction(Direction dir) {
+        this.direction = dir;
     }
 }

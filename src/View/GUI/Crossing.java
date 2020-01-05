@@ -1,5 +1,6 @@
-package View;
+package View.GUI;
 
+import View.Main;
 import java.awt.Graphics;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;

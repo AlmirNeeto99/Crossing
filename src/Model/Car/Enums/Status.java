@@ -1,4 +1,4 @@
-package Model.Enums;
+package Model.Car.Enums;
 
 /**
  *
