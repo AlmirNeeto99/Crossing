@@ -3,6 +3,7 @@ package View;
 import View.GUI.Crossing;
 import View.GUI.HomePage;
 import Controller.Controller;
+import Controller.Controller2;
 import java.awt.CardLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -24,7 +25,8 @@ import javax.swing.Timer;
  */
 public class Main extends JFrame implements ActionListener {
 
-    public static Controller controller;
+    //public static Controller controller;
+    public static Controller2 controller;
 
     private static Crossing crossing;
     private static HomePage home;
@@ -37,7 +39,7 @@ public class Main extends JFrame implements ActionListener {
     //private final int street_length = 80;
 
     public Main() {
-        controller = new Controller();
+        controller = new Controller2();
         crossing = new Crossing();
         home = new HomePage();
         cards = new JPanel(new CardLayout());
@@ -72,6 +74,8 @@ public class Main extends JFrame implements ActionListener {
                 if (keys.size() > 0) {
                     if (ke.getKeyCode() == 72) {
                         crossing.connect();
+                    } else if (ke.getKeyCode() == 83) {
+                        controller.start_playing();
                     }
                 }
             }
@@ -91,10 +95,10 @@ public class Main extends JFrame implements ActionListener {
             @Override
             public void run() {
                 while (true) {
+                    if (controller.has_new_peer()) {
+                        crossing.has_new_peer();
+                    }
                     try {
-                        if (controller.has_new_peer()) {
-                            crossing.has_new_peer();
-                        }
                         Thread.sleep(250);
                     } catch (InterruptedException ex) {
                         Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);

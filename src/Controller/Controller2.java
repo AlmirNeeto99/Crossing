@@ -1,12 +1,14 @@
 package Controller;
 
+import Model.Car.Car;
 import Model.Car.Enums.Path;
 import Model.Car.Enums.Status;
+import Model.Car.Plate;
 import Model.Car.Util.HandleCarMovements;
-import Model.Car.Positions.CrossingPositions;
-import Model.Car.*;
-import Model.Peer.*;
-import Util.CrossingHandler;
+import Model.Peer.PeerClient;
+import Model.Peer.PeerHandler;
+import Model.Peer.PeerServer;
+import Util.CrossingHandler2;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.io.IOException;
@@ -23,23 +25,62 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-public class Controller implements CrossingPositions {
+/**
+ *
+ * @author Almir Neto
+ */
+public class Controller2 {
 
     private PeerServer server;
     private final HashMap<String, Car> cars = new HashMap();
     private final HashMap<String, PeerClient> peers = new HashMap();
-    private CrossingHandler crossing;
+    private CrossingHandler2 crossing;
+
+    private static boolean start_play = false;
 
     private String server_address = "";
 
-    public void create_server(int port) throws IOException {
+    public void create_server(int port, int start_position) throws IOException {
         server = new PeerServer(port);
         start_server();
         /*Create an instance for local car*/
-        Path[] path = HandleCarMovements.get_path();
+        Path[] path = new Path[2];
+        Random rand = new Random();
+        switch (start_position) {
+            case 0:
+                path[0] = Path.UP;
+                break;
+            case 1:
+                path[0] = Path.RIGHT;
+                break;
+            case 2:
+                path[0] = Path.DOWN;
+                break;
+            case 3:
+                path[0] = Path.LEFT;
+                break;
+        }
+        int stop = rand.nextInt(4);
+        while (start_position == stop) {
+            stop = rand.nextInt(4);
+        }
+        switch (stop) {
+            case 0:
+                path[1] = Path.UP;
+                break;
+            case 1:
+                path[1] = Path.RIGHT;
+                break;
+            case 2:
+                path[1] = Path.DOWN;
+                break;
+            case 3:
+                path[1] = Path.LEFT;
+                break;
+        }
         int[] start = HandleCarMovements.get_start_position(path[0]);
         Car c = new Car(start[0], start[1], path[0], path[1], new Plate(server.get_address(), port), create_color());
-        crossing = new CrossingHandler(c, server, peers);
+        crossing = new CrossingHandler2(c, server, peers);
         HandleCarMovements.set_car_direction(c, path[0]);
         c.setStatus(Status.MOVING);
         cars.put(server.get_address() + ":" + port, c);
@@ -55,7 +96,7 @@ public class Controller implements CrossingPositions {
                         Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(150);
                     } catch (InterruptedException ex) {
                         Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -67,47 +108,51 @@ public class Controller implements CrossingPositions {
         Thread move_car = new Thread() {
             public void run() {
                 Car car = cars.get(server.get_address() + ":" + server.getLocalPort());
-
                 while (true) {
-                    switch (car.getFrom()) {
-                        case UP:
-                            HandleCarMovements.car_from_up(car);
-                            break;
-                        case DOWN:
-                            HandleCarMovements.car_from_down(car);
-                            break;
-                        case LEFT:
-                            HandleCarMovements.car_from_left(car);
-                            break;
-                        case RIGHT:
-                            HandleCarMovements.car_from_right(car);
-                            break;
+                    if (start_play == false) {
+                        System.out.println(start_play);
                     }
-                    if (car.getStatus() != Status.STOPPED) {
-                        car.move();
-                    }
-                    if (HandleCarMovements.check_if_reached_stop_line(car)) {
-                        if (crossing.status()) { // If is locked stop the car
-                            car.setStatus(Status.STOPPED);
+                    if (start_play == true) {
+                        switch (car.getFrom()) {
+                            case UP:
+                                HandleCarMovements.car_from_up(car);
+                                break;
+                            case DOWN:
+                                HandleCarMovements.car_from_down(car);
+                                break;
+                            case LEFT:
+                                HandleCarMovements.car_from_left(car);
+                                break;
+                            case RIGHT:
+                                HandleCarMovements.car_from_right(car);
+                                break;
                         }
-                    }
-                    if (!peers.isEmpty()) {
-                        crossing.ask_to_cross();
-                    }
-                    if (HandleCarMovements.check_if_reached_end(car)) {
-                        JSONObject jo = new JSONObject();
-                        jo.put("data_type", "crossed");
+                        if (car.getStatus() != Status.STOPPED) {
+                            car.move();
+                        }
+                        if (HandleCarMovements.check_if_reached_stop_line(car)) {
+                            System.out.println(crossing.stop());
+                            if (crossing.stop()) { // If is locked stop the car
+                                car.setStatus(Status.STOPPED);
+                            } else {
+                                car.setStatus(Status.MOVING);
+                            }
+                        }
+                        if (HandleCarMovements.check_if_reached_end(car)) {
+                            JSONObject jo = new JSONObject();
+                            jo.put("data_type", "crossed");
+                            try {
+                                notifyAllPeers(jo.toString());
+                            } catch (IOException ex) {
+                                Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+
                         try {
-                            notifyAllPeers(jo.toString());
-                        } catch (IOException ex) {
+                            Thread.sleep(150);
+                        } catch (InterruptedException ex) {
                             Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                    }
-
-                    try {
-                        Thread.sleep(150);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             }
@@ -324,24 +369,22 @@ public class Controller implements CrossingPositions {
                                     connect_peer(host, port);
                                 }
                             }
-                        } else if (type.equals("crossing_request")) {
-                            String com = jo.get("command") + "";
-                            switch (com) {
-                                case "can_cross":
-                                    crossing.crossing_request(hand.get_host() + ":" + hand.get_port());
-                                    break;
-                            }
-                        } else if (type.equals("movement_command")) {
-                            String command = (String) jo.get("command");
-                            if (command.equals("stop")) {
-                                cars.get(server_address).setStatus(Status.STOPPED);
-                            }
                         } else if (type.equals("crossed")) {
                             crossing.crossed_complete(hand.get_host() + ":" + hand.get_port());
-                            cars.get(server_address).setStatus(Status.MOVING);
-                        }
-                        else if(type.equals("solicitation_response")){
-                            
+                        } else if (type.equals("priority_number")) {
+                            this.start_play = true;
+                            JSONObject jo_prio = new JSONObject();
+                            jo_prio.put("data_type", "priority_sync");
+                            int priority = random_number();
+                            jo_prio.put("number", priority);
+                            crossing.setMyNumber(priority);
+                            peers.get(hand.get_host() + ":" + hand.get_port()).send(jo_prio.toJSONString());
+                            System.out.println("number received");
+                            priority = Integer.parseInt(jo.get("number") + "");
+                            crossing.number_received(hand.get_host() + ":" + hand.get_port(), priority);
+                        } else if (type.equals("priority_sync")) {
+                            int priority = Integer.parseInt(jo.get("number") + "");
+                            crossing.number_received(hand.get_host() + ":" + hand.get_port(), priority);
                         }
                     } catch (ParseException ex) {
                         Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
@@ -358,6 +401,31 @@ public class Controller implements CrossingPositions {
                 }
                 break;
             }
+        }
+    }
+
+    public void start_playing() {
+        if (!this.start_play) {
+            send_priority();
+            this.start_play = true;
+        }
+    }
+
+    private int random_number() {
+        Random r = new Random();
+        return r.nextInt(1000);
+    }
+
+    private void send_priority() {
+        JSONObject jo = new JSONObject();
+        jo.put("data_type", "priority_number");
+        int priority = random_number();
+        jo.put("number", priority);
+        crossing.setMyNumber(priority);
+        try {
+            notifyAllPeers(jo.toJSONString());
+        } catch (IOException ex) {
+            Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }
