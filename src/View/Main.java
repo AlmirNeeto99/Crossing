@@ -68,6 +68,7 @@ public class Main extends JFrame implements ActionListener {
 
             @Override
             public void keyPressed(KeyEvent ke) {
+                //System.out.println("key: "+ke.getKeyCode());
                 if (ke.getKeyCode() == 17) {
                     keys.add(ke.getKeyCode());
                 }
@@ -76,6 +77,8 @@ public class Main extends JFrame implements ActionListener {
                         crossing.connect();
                     } else if (ke.getKeyCode() == 83) {
                         controller.start_playing();
+                    } else if (ke.getKeyCode() == 82) {
+
                     }
                 }
             }

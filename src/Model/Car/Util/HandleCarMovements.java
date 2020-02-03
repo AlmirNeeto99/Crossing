@@ -72,12 +72,52 @@ public abstract class HandleCarMovements {
         Rectangle right_limit = new Rectangle(EndPositions.end_right[0], EndPositions.end_right[1], 5, 40);
 
         if (car.intersects(right_limit) || car.intersects(left_limit) || car.intersects(upper_limit) || car.intersects(lower_limit)) {
-            Path[] path = get_path();
-            int[] start = get_start_position(path[0]);
+            Path start_position = car.getFrom();
+
+            Path[] path = new Path[2];
+            Random rand = new Random();
+            int start = 0;
+            switch (start_position) {
+                case UP:
+                    start = 0;
+                    path[0] = Path.UP;
+                    break;
+                case RIGHT:
+                    start = 1;
+                    path[0] = Path.RIGHT;
+                    break;
+                case DOWN:
+                    start = 2;
+                    path[0] = Path.DOWN;
+                    break;
+                case LEFT:
+                    start = 3;
+                    path[0] = Path.LEFT;
+                    break;
+            }
+            int stop = rand.nextInt(4);
+            while (start == stop) {
+                stop = rand.nextInt(4);
+            }
+            switch (stop) {
+                case 0:
+                    path[1] = Path.UP;
+                    break;
+                case 1:
+                    path[1] = Path.RIGHT;
+                    break;
+                case 2:
+                    path[1] = Path.DOWN;
+                    break;
+                case 3:
+                    path[1] = Path.LEFT;
+                    break;
+            }
+            int[] start_pos = get_start_position(path[0]);
             car.setFrom(path[0]);
             car.setTo(path[1]);
-            car.x = start[0];
-            car.y = start[1];
+            car.x = start_pos[0];
+            car.y = start_pos[1];
             set_car_direction(car, path[0]);
             car.setStatus(Status.STOPPED);
             return true;

@@ -50,7 +50,7 @@ public class CrossingHandler2 {
         int size = prio.size();
         for (int i = 0; i < size; i++) {
             CrossingEntity e = prio.get(i);
-            if (c.num < e.num) {
+            if (c.num <= e.num) {
                 prio.add(i, c);
             } else {
                 prio.add(c);

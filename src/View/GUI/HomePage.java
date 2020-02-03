@@ -85,10 +85,8 @@ public class HomePage extends JPanel {
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(this.getParent(), "Please, type a number!", "Error", JOptionPane.ERROR_MESSAGE);
                     }
-
                 }
             });
-
             /* Button */            
         });
         add(start, c);
