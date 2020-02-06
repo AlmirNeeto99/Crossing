@@ -10,6 +10,7 @@ import Util.CrossingHandler;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,7 +34,7 @@ public class Controller implements CrossingPositions {
     private String server_address = "";
 
     public void create_server(int port) throws IOException {
-        server = new PeerServer(port);
+        server = new PeerServer(port, server.getInetAddress());
         start_server();
         /*Create an instance for local car*/
         Path[] path = HandleCarMovements.get_path();
