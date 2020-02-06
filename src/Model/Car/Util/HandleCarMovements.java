@@ -165,7 +165,6 @@ public abstract class HandleCarMovements {
             case RIGHT:
                 if (car.x == forth_quadrant[0] && car.y == forth_quadrant[1]) {
                     car.set_direction(Direction.RIGHT);
-                    System.out.println("baixo pra direita");
                 }
                 break;
         }
@@ -176,13 +175,11 @@ public abstract class HandleCarMovements {
             case LEFT:
                 if (car.x == second_quadrant[0] && car.y == second_quadrant[1]) {
                     car.set_direction(Direction.LEFT);
-                    System.out.println("cima pra esquerda");
                 }
                 break;
             case RIGHT:
                 if (car.x == third_quadrant[0] && car.y == third_quadrant[1]) {
                     car.set_direction(Direction.RIGHT);
-                    System.out.println("cima pra direita");
                 }
                 break;
         }
@@ -212,7 +209,6 @@ public abstract class HandleCarMovements {
         Rectangle right_limit = new Rectangle(StopPositions.stop_right[0], StopPositions.stop_right[1], 5, 40);
 
         if (car.intersects(right_limit) || car.intersects(left_limit) || car.intersects(upper_limit) || car.intersects(lower_limit)) {
-            System.out.println("cruzou a linha de parar");
             return true;
         }
         return false;

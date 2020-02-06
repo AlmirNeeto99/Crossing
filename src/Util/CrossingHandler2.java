@@ -16,8 +16,7 @@ public class CrossingHandler2 {
 
     private static boolean must_stop;
 
-    private int pos = 0;
-    private ArrayList<CrossingEntity> prio = new ArrayList();
+    private final ArrayList<CrossingEntity> prio = new ArrayList();
 
     public CrossingHandler2(Car local_car, PeerServer server, HashMap peers) {
         this.car = local_car;
@@ -47,6 +46,7 @@ public class CrossingHandler2 {
             must_stop = true;
             return;
         }
+        System.out.println("my: " + my_number);
         int size = prio.size();
         for (int i = 0; i < size; i++) {
             CrossingEntity e = prio.get(i);
@@ -64,7 +64,9 @@ public class CrossingHandler2 {
     }
 
     public void setMyNumber(int priority) {
-        prio.add(new CrossingEntity(server.get_address() + ":" + server.getLocalPort(), priority));
+        if (my_number == -1) {
+            prio.add(new CrossingEntity(server.get_address() + ":" + server.getLocalPort(), priority));
+        }
         this.my_number = priority;
     }
 

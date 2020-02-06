@@ -74,11 +74,12 @@ public class Main extends JFrame implements ActionListener {
                 }
                 if (keys.size() > 0) {
                     if (ke.getKeyCode() == 72) {
-                        crossing.connect();
+                        //crossing.connect();
+                        controller.send_ip_to_network();
                     } else if (ke.getKeyCode() == 83) {
                         controller.start_playing();
                     } else if (ke.getKeyCode() == 82) {
-
+                        controller.restart();
                     }
                 }
             }

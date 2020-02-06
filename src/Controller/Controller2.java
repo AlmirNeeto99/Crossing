@@ -12,7 +12,13 @@ import Util.CrossingHandler2;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -35,6 +41,9 @@ public class Controller2 {
     private final HashMap<String, Car> cars = new HashMap();
     private final HashMap<String, PeerClient> peers = new HashMap();
     private CrossingHandler2 crossing;
+
+    private MulticastSocket multi = null;
+    private byte[] buffer = new byte[256];
 
     private static boolean start_play = false;
 
@@ -131,7 +140,6 @@ public class Controller2 {
                             car.move();
                         }
                         if (HandleCarMovements.check_if_reached_stop_line(car)) {
-                            System.out.println(crossing.stop());
                             if (crossing.stop()) { // If is locked stop the car
                                 car.setStatus(Status.STOPPED);
                             } else {
@@ -158,6 +166,64 @@ public class Controller2 {
             }
         };
         move_car.start();
+        multicast_receiver();
+    }
+
+    private void multicast_receiver() {
+        Thread broadcast_receiver = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    multi = new MulticastSocket(5544);
+                } catch (IOException ex) {
+                    Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                InetAddress group = null;
+                try {
+                    group = InetAddress.getByName("225.1.2.3");
+                } catch (UnknownHostException ex) {
+                    Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                try {
+                    multi.joinGroup(group);
+                } catch (IOException ex) {
+                    Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                while (true) {
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    try {
+                        multi.receive(packet);
+                    } catch (IOException ex) {
+                        Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    String received = new String(
+                            packet.getData(), 0, packet.getLength());
+                    String[] con_info = received.split(":");
+                    String ip = con_info[1];
+                    int port = Integer.parseInt(con_info[2]);
+
+                    if (port != server.getLocalPort()) {
+                        try {
+                            connect_peer(ip, port);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                }
+            }
+        };
+        broadcast_receiver.start();
+    }
+
+    private void broadcast(String multicastMessage) throws SocketException, IOException {
+        DatagramSocket socket = new DatagramSocket();
+        InetAddress group = InetAddress.getByName("225.1.2.3");
+        byte[] buf = multicastMessage.getBytes();
+
+        DatagramPacket packet
+                = new DatagramPacket(buf, buf.length, group, 5544);
+        socket.send(packet);
+        socket.close();
     }
 
     private void start_server() {
@@ -194,6 +260,7 @@ public class Controller2 {
         peers.put(host + ":" + port, peer);
 
         return c;
+
     }
 
     private void send_connection_information(PeerClient p) throws IOException {
@@ -340,23 +407,6 @@ public class Controller2 {
                                         c.setStatus(Status.STOPPED);
                                         break;
                                 }
-                                Car car = cars.get(server.get_address() + ":" + server.getLocalPort());
-//                                if (car.intersects(c)) {
-//                                    switch (car.getFrom()) {
-//                                        case UP:
-//                                            car.y += 25;
-//                                            break;
-//                                        case DOWN:
-//                                            car.y -= 25;
-//                                            break;
-//                                        case LEFT:
-//                                            car.x += 25;
-//                                            break;
-//                                        case RIGHT:
-//                                            car.x -= 25;
-//                                            break;
-//                                    }
-//                                }
                             }
                         } else if (type.equals("more_peers")) {
                             JSONArray arr = (JSONArray) jo.get("peers");
@@ -379,12 +429,13 @@ public class Controller2 {
                             jo_prio.put("number", priority);
                             crossing.setMyNumber(priority);
                             peers.get(hand.get_host() + ":" + hand.get_port()).send(jo_prio.toJSONString());
-                            System.out.println("number received");
                             priority = Integer.parseInt(jo.get("number") + "");
                             crossing.number_received(hand.get_host() + ":" + hand.get_port(), priority);
-                        } else if (type.equals("priority_sync")) {
+                            cars.get(server.get_address() + ":" + server.getLocalPort()).setStatus(Status.MOVING);
+                        } else if (type.equals("priority_sync")) {                            
                             int priority = Integer.parseInt(jo.get("number") + "");
                             crossing.number_received(hand.get_host() + ":" + hand.get_port(), priority);
+                            cars.get(server.get_address() + ":" + server.getLocalPort()).setStatus(Status.MOVING);
                         }
                     } catch (ParseException ex) {
                         Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
@@ -427,5 +478,17 @@ public class Controller2 {
         } catch (IOException ex) {
             Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    public void send_ip_to_network() {
+        try {
+            broadcast("ip:" + server.get_address() + ":" + server.getLocalPort());
+        } catch (IOException ex) {
+            Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void restart() {
+        send_priority();
     }
 }
