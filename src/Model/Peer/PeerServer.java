@@ -2,9 +2,14 @@ package Model.Peer;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * PeerServer is an object that hold all clients that are connected to it.
@@ -17,8 +22,8 @@ public class PeerServer extends ServerSocket {
 
     private boolean new_peer = false;
 
-    public PeerServer(int port) throws IOException {
-        super(port, 3, InetAddress.getLocalHost());
+    public PeerServer(int port, InetAddress addr) throws IOException {
+        super(port, 3, addr);
         this.peers = new ArrayList();
     }
 
@@ -68,5 +73,5 @@ public class PeerServer extends ServerSocket {
 
     public void remove(int idx) {
         this.peers.remove(idx);
-    }
+    }    
 }

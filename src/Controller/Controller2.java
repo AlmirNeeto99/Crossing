@@ -16,9 +16,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -48,9 +51,30 @@ public class Controller2 {
     private static boolean start_play = false;
 
     private String server_address = "";
+    
+    private InetAddress get_ip() {
+        NetworkInterface n = null;
+        try {
+            n = NetworkInterface.getByIndex(2);
+        } catch (SocketException ex) {
+            Logger.getLogger(PeerServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        while (n != null) {
+            Enumeration e = n.getInetAddresses();
+            int pos = 0;
+            while (e.hasMoreElements()) {
+                InetAddress i = (InetAddress) e.nextElement();
+                if (pos == 1) {
+                    return i;
+                }
+                pos++;
+            }
+        }
+        return null;
+    }
 
     public void create_server(int port, int start_position) throws IOException {
-        server = new PeerServer(port);
+        server = new PeerServer(port, get_ip());
         start_server();
         /*Create an instance for local car*/
         Path[] path = new Path[2];
@@ -180,7 +204,7 @@ public class Controller2 {
                 }
                 InetAddress group = null;
                 try {
-                    group = InetAddress.getByName("225.1.2.3");
+                    group = InetAddress.getByName("224.0.0.255");
                 } catch (UnknownHostException ex) {
                     Logger.getLogger(Controller2.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -202,6 +226,9 @@ public class Controller2 {
                     String ip = con_info[1];
                     int port = Integer.parseInt(con_info[2]);
 
+                    System.out.println(ip);
+                    System.out.println(port);
+
                     if (port != server.getLocalPort()) {
                         try {
                             connect_peer(ip, port);
@@ -217,7 +244,7 @@ public class Controller2 {
 
     private void broadcast(String multicastMessage) throws SocketException, IOException {
         DatagramSocket socket = new DatagramSocket();
-        InetAddress group = InetAddress.getByName("225.1.2.3");
+        InetAddress group = InetAddress.getByName("224.0.0.255");
         byte[] buf = multicastMessage.getBytes();
 
         DatagramPacket packet
@@ -432,7 +459,7 @@ public class Controller2 {
                             priority = Integer.parseInt(jo.get("number") + "");
                             crossing.number_received(hand.get_host() + ":" + hand.get_port(), priority);
                             cars.get(server.get_address() + ":" + server.getLocalPort()).setStatus(Status.MOVING);
-                        } else if (type.equals("priority_sync")) {                            
+                        } else if (type.equals("priority_sync")) {
                             int priority = Integer.parseInt(jo.get("number") + "");
                             crossing.number_received(hand.get_host() + ":" + hand.get_port(), priority);
                             cars.get(server.get_address() + ":" + server.getLocalPort()).setStatus(Status.MOVING);
